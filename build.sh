@@ -1,0 +1,1 @@
+gcc src/*.c -Wall -Wextra -Wpedantic -std=c11 -g -o bin/read_sd
