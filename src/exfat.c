@@ -242,7 +242,7 @@ int open_from_directory(exfat_stream_t *dir_stream, char *target_filename, exfat
         dir_stream = &root_stream;
         init_stream(dir_stream, root_directory_cluster, 0, false, true, true);
     } else if(!dir_stream->is_directory) {
-        return 1;
+        return ERR_NOT_DIRECTORY;
     }
 
     static uint8_t buf[BLOCK_SIZE];
@@ -265,7 +265,7 @@ int open_from_directory(exfat_stream_t *dir_stream, char *target_filename, exfat
 
             uint8_t type = buf[offset];
             if(type == 0) {
-                return 1; // entry type 0 indicates end of directory; file was not found
+                return ERR_NOT_FOUND; // entry type 0 indicates end of directory; file was not found
             }
 
             // file directory entry is followed by stream extension entry
@@ -327,6 +327,6 @@ int open_from_directory(exfat_stream_t *dir_stream, char *target_filename, exfat
 
     }
 
-    return 1;
+    return ERR_NOT_FOUND;
 
 }

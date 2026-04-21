@@ -1,5 +1,5 @@
-#ifndef __FS_DRIVER_H
-#define __FS_DRIVER_H
+#ifndef __EXFAT_H
+#define __EXFAT_H
 
 #include "sd-interface.h"
 #include <stdbool.h>
@@ -21,6 +21,8 @@ typedef struct {
 #define ERR_EXFAT_VERSION_UNKNOWN       2
 #define ERR_EXFAT_WRONG_SECTOR_SIZE     3
 #define ERR_EXFAT_BAD_NUM_FATS          4
+#define ERR_NOT_DIRECTORY               5
+#define ERR_NOT_FOUND                   6
 
 int init_exfat();
 uint32_t read_stream(exfat_stream_t *stream, void *dst);

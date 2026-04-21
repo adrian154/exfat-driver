@@ -47,8 +47,8 @@ int main(int argc, char **argv) {
         char *filename_write = filename;
         while(*path_cur != '\0' && *path_cur != '/') {
             *filename_write = *path_cur;
-            *path_cur++;
-            *filename_write++;
+            path_cur++;
+            filename_write++;
         }
         *filename_write = '\0';
 
