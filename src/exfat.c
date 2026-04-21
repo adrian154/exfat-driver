@@ -7,6 +7,7 @@
  *    We only support ASCII names, and filenames are not automatically uppercased (this is also not compliant).
  */
 #include "exfat.h"
+#include <stdio.h>
 
 // MBR partition status flags
 #define PART_STATUS_ACTIVE              0x80
@@ -30,7 +31,7 @@
 #define FILE_ATTRIBUTE_DIRECTORY        0x10
 
 // Directory entry secondary flags
-#define SECONDARY_FLAGS_NOCHAIN         0x01
+#define SECONDARY_FLAGS_NOCHAIN         0x02
 
 // Directory entry-reading state machine
 #define STATE_READING_FILE              0
@@ -170,18 +171,19 @@ void init_stream(exfat_stream_t *stream, uint32_t start_cluster, uint32_t length
     stream->no_chain = no_chain;
     stream->no_length = no_length;
     stream->is_directory = is_directory;
-    stream->finished = false;
+    stream->ended = false;
 }
 
 // read data from a cluster chain, one sector at a time
 // dst must be able to accomodate BLOCK_SIZE bytes; the actual number of bytes written is returned
+// if no_length is set, data is read until the end of the cluster chain is encountered (this is used for the root directory)
 uint32_t read_stream(exfat_stream_t *stream, void *dst) {
 
     read_block(stream->cluster_sector_offset + stream->cur_sector_offset, dst);
     
-    // if remaining bytes to be read is less than or equal to BLOCK_SIZE, we are finished
+    // if remaining bytes to be read is less than or equal to BLOCK_SIZE, we are done
     if(!stream->no_length && stream->bytes_remaining <= BLOCK_SIZE) {
-        stream->finished = true;
+        stream->ended = true;
         return stream->bytes_remaining;
     }
 
@@ -191,21 +193,25 @@ uint32_t read_stream(exfat_stream_t *stream, void *dst) {
     }
     stream->cur_sector_offset++;
 
-    // if finished with the cluster, move to next cluster
+    // if done with the cluster, move to next cluster
     if(stream->cur_sector_offset == sectors_per_cluster) {
+
         stream->cur_sector_offset = 0;
+
         if(stream->no_chain) {
-            stream->cur_cluster++;
+            stream->cur_cluster++; // if no_chain set, simply move forward linearly
         } else {
-            uint32_t next_cluster = FAT_lookup(stream->cur_cluster);
-            if(next_cluster == FAT_BAD || next_cluster == FAT_END) {
-                if(stream->no_length) {
-                    stream->finished = true;
-                } else {
-                    // TODO... handle this error condition
-                }
+            uint32_t next_cluster = FAT_lookup(stream->cur_cluster); // otherwise, lookup next cluster in chain within FAT
+            if(next_cluster == FAT_END || next_cluster == FAT_BAD) {
+                stream->ended = true; // TODO - this may be an error condition; indicate this somehow to the user
+            } else {
+                stream->cur_cluster = next_cluster;
             }
         }
+
+        // lookup new cluster sector offset
+        stream->cluster_sector_offset = cluster_to_sector(stream->cur_cluster);
+
     }
 
     // indicate that we read a full sector
@@ -279,6 +285,11 @@ int open_from_directory(exfat_stream_t *dir_stream, char *target_filename, exfat
             // stream extension is followed by filename entry/entries
             if(type == DIRENT_TYPE_STREAMEXT) {
 
+                for(int i = 0; i < 32; i++) {
+                    fprintf(stderr, "%02x ", buf[offset+i]);
+                }
+                fputs("\n", stderr);
+
                 // ignore spurious stream extension entry
                 if(state != STATE_READING_STREAM_EXT) {
                     continue;
@@ -321,7 +332,7 @@ int open_from_directory(exfat_stream_t *dir_stream, char *target_filename, exfat
 
         }
 
-        if(dir_stream->finished) {
+        if(dir_stream->ended) {
             break;
         }
 

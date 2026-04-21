@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
                     char buf[BLOCK_SIZE];
                     uint32_t count = read_stream(&child, buf);
                     fwrite(buf, 1, count, stdout);
-                    if(child.finished) {
+                    if(child.ended) {
                         break;
                     }
                 }

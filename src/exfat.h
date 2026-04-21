@@ -12,7 +12,7 @@ typedef struct {
     uint32_t bytes_remaining;
     bool no_chain;
     bool no_length;
-    bool finished;
+    bool ended;
     bool is_directory;
 } exfat_stream_t;
 
