@@ -7,7 +7,6 @@
  *    We only support ASCII names, and filenames are not automatically uppercased (this is also not compliant).
  */
 #include "exfat.h"
-#include <stdio.h>
 
 // MBR partition status flags
 #define PART_STATUS_ACTIVE              0x80
@@ -284,11 +283,6 @@ int open_from_directory(exfat_stream_t *dir_stream, char *target_filename, exfat
             // stream extension contains info on filename length as well as physical location of file data
             // stream extension is followed by filename entry/entries
             if(type == DIRENT_TYPE_STREAMEXT) {
-
-                for(int i = 0; i < 32; i++) {
-                    fprintf(stderr, "%02x ", buf[offset+i]);
-                }
-                fputs("\n", stderr);
 
                 // ignore spurious stream extension entry
                 if(state != STATE_READING_STREAM_EXT) {
